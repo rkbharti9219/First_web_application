@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.name }} - Flipzon{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'store:home' %}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'store:product_list' %}">Products</a></li>
+    <li class="breadcrumb-item active">{{ product.name }}</li>
+  </ol>
+</nav>
+
+<div class="row g-5">
+
+  <!-- Product Image -->
+  <div class="col-md-5">
+    <div class="card p-3">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+      {% else %}
+        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height:320px;">
+          <i class="fas fa-image fa-5x text-muted"></i>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Product Details -->
+  <div class="col-md-7">
+    <span class="badge bg-secondary mb-2">{{ product.category.name }}</span>
+    <h2 class="fw-bold">{{ product.name }}</h2>
+
+    <!-- Rating -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+      {% for i in "12345" %}
+        <i class="fas fa-star {% if forloop.counter <= avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+      {% endfor %}
+      <span class="text-muted">({{ reviews.count }} reviews)</span>
+    </div>
+
+    <!-- Price -->
+    <div class="mb-3">
+      <span class="fs-2 fw-bold text-primary">{{ product.final_price }}</span>
+      {% if product.discount_price %}
+        <span class="old-price ms-3 fs-5">{{ product.price }}</span>
+        <span class="discount-badge ms-2">{{ product.discount_percent }}% OFF</span>
+      {% endif %}
+    </div>
+
+    <p class="text-muted mb-4">{{ product.description }}</p>
+
+    {% if product.in_stock %}
+      <p>
+        <span class="badge bg-success">
+          <i class="fas fa-check me-1"></i>In Stock ({{ product.stock }})
+        </span>
+      </p>
+
+      <!-- Add to Cart -->
+      <form action="{% url 'cart:add' product.id %}" method="post" class="d-flex align-items-center gap-3">
+        {% csrf_token %}
+        <div class="input-group" style="width:120px;">
+          <button type="button" class="btn btn-outline-secondary" onclick="changeQty(-1)">-</button>
+          <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ product.stock }}" class="form-control text-center">
+          <button type="button" class="btn btn-outline-secondary" onclick="changeQty(1)">+</button>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg px-4">
+          <i class="fas fa-cart-plus me-2"></i>Add to Cart
+        </button>
+      </form>
+    {% else %}
+      <button class="btn btn-secondary btn-lg" disabled>Out of Stock</button>
+    {% endif %}
+
+    <!-- Features -->
+    <div class="mt-4 d-flex gap-4 text-muted">
+      <span><i class="fas fa-truck me-1 text-primary"></i>Free delivery above 500</span>
+      <span><i class="fas fa-undo me-1 text-primary"></i>30-day returns</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- Reviews -->
+<div class="row mt-5">
+  <div class="col-md-8">
+    <h4 class="fw-bold mb-4">Customer Reviews</h4>
+
+    {% if user.is_authenticated and not user_review %}
+    <div class="card p-4 mb-4">
+      <h6 class="fw-bold mb-3">Write a Review</h6>
+
+      <form action="{% url 'store:add_review' product.slug %}" method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rating</label>
+          <select name="rating" class="form-select" required>
+            <option value="">Select rating</option>
+            <option value="5">Excellent</option>
+            <option value="4">Good</option>
+            <option value="3">Average</option>
+            <option value="2">Poor</option>
+            <option value="1">Terrible</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Comment</label>
+          <textarea name="comment" class="form-control" rows="3" placeholder="Share your experience..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Review</button>
+      </form>
+    </div>
+
+    {% elif not user.is_authenticated %}
+      <div class="alert alert-info">
+        <a href="{% url 'accounts:login' %}">Login</a> to write a review.
+      </div>
+    {% endif %}
+
+    <!-- Review List -->
+    {% for review in reviews %}
+    <div class="card p-4 mb-3">
+      <div class="d-flex justify-content-between">
+        <strong>{{ review.user.get_full_name|default:review.user.username }}</strong>
+        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+      </div>
+
+      <div class="my-1">
+        {% for i in "12345" %}
+          <i class="fas fa-star {% if forloop.counter <= review.rating %}text-warning{% else %}text-muted{% endif %} fa-sm"></i>
+        {% endfor %}
+      </div>
+
+      <p class="mb-0 text-muted">{{ review.comment }}</p>
+    </div>
+
+    {% empty %}
+      <p class="text-muted">No reviews yet. Be the first!</p>
+    {% endfor %}
+
+  </div>
+</div>
+
+<!-- Related Products -->
+{% if related %}
+<div class="mt-5">
+  <h4 class="fw-bold mb-4">Related Products</h4>
+
+  <div class="row g-4">
+    {% for p in related %}
+    <div class="col-6 col-md-3">
+      <div class="card h-100">
+
+        <a href="{% url 'store:product_detail' p.slug %}">
+          {% if p.image %}
+            <img src="{{ p.image.url }}" class="product-img w-100" alt="{{ p.name }}">
+          {% else %}
+            <div class="product-img w-100 bg-light d-flex align-items-center justify-content-center">
+              <i class="fas fa-image fa-2x text-muted"></i>
+            </div>
+          {% endif %}
+        </a>
+
+        <div class="card-body">
+          <h6 class="fw-bold">
+            <a href="{% url 'store:product_detail' p.slug %}" class="text-dark text-decoration-none">
+              {{ p.name }}
+            </a>
+          </h6>
+          <span class="price">{{ p.final_price }}</span>
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changeQty(d){
+  const i = document.getElementById('qty');
+  const v = parseInt(i.value) + d;
+  if(v >= 1 && v <= parseInt(i.max)) i.value = v;
+}
+</script>
+{% endblock %}

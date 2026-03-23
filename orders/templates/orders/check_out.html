@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Checkout - Flipzon{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4"><i class="fas fa-credit-card me-2"></i>Checkout</h2>
+<div class="row g-4">
+<div class="col-md-7">
+<div class="card p-4">
+<h5 class="fw-bold mb-4">Shipping Information</h5>
+<form method="post">
+{% csrf_token %}
+<div class="row g-3">
+<div class="col-12">
+<label class="form-label fw-semibold">Full Name *</label>
+<input type="text" name="full_name" class="form-control" value="{{ user.get_full_name }}" required>
+</div>
+<div class="col-md-6">
+<label class="form-label fw-semibold">Email *</label>
+<input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+</div>
+<div class="col-md-6">
+<label class="form-label fw-semibold">Phone *</label>
+<input type="tel" name="phone" class="form-control" placeholder="10-digit number" required>
+</div>
+<div class="col-12">
+<label class="form-label fw-semibold">Address *</label>
+<textarea name="address" class="form-control" rows="2" placeholder="House/Flat no., Street, Area"
+required></textarea>
+</div>
+<div class="col-md-4">
+<label class="form-label fw-semibold">City *</label>
+<input type="text" name="city" class="form-control" required>
+</div>
+<div class="col-md-4">
+<label class="form-label fw-semibold">State *</label>
+<input type="text" name="state" class="form-control" required>
+</div>
+<div class="col-md-4">
+<label class="form-label fw-semibold">PIN Code *</label>
+<input type="text" name="pincode" class="form-control" maxlength="6" required>
+</div>
+<div class="col-12 mt-2">
+<h5 class="fw-bold mb-3">Payment Method</h5>
+<div class="d-flex gap-3">
+<div class="form-check border rounded p-3 flex-fill">
+<input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" checked>
+<label class="form-check-label fw-semibold" for="cod">
+<i class="fas fa-money-bill-wave me-2 text-success"></i>Cash on Delivery
+</label>
+</div>
+<div class="form-check border rounded p-3 flex-fill">
+<input class="form-check-input" type="radio" name="payment_method" id="online" value="online">
+<label class="form-check-label fw-semibold" for="online">
+<i class="fas fa-credit-card me-2 text-primary"></i>Online Payment
+</label>
+</div>
+</div>
+</div>
+<div class="col-12 mt-2">
+<button type="submit" class="btn btn-primary btn-lg w-100">
+<i class="fas fa-check-circle me-2"></i>Place Order
+</button>
+</div>
+</div>
+</form>
+</div>
+</div>
+<div class="col-md-5">
+<div class="card p-4">
+    <h5 class="fw-bold mb-4">Order Summary</h5>
+{% for item in cart.items.all %}
+<div class="d-flex justify-content-between mb-3 align-items-center">
+<div class="d-flex align-items-center gap-2">
+{% if item.product.image %}<img src="{{ item.product.image.url }}"
+style="width:45px;height:45px;object-fit:cover;border-radius:8px;" alt="">{% endif %}
+<div>
+<div class="fw-semibold" style="font-size:.9rem;">{{ item.product.name }}</div>
+<small class="text-muted">Qty: {{ item.quantity }}</small>
+</div>
+</div>
+<span class="fw-bold"> {{ item.total_price }}</span>
+</div>
+{% endfor %}
+<hr>
+<div class="d-flex justify-content-between mb-2"><span>Subtotal</span><span> {{ cart.total_price
+}}</span></div>
+<div class="d-flex justify-content-between mb-2"><span>Delivery</span><span class="text-success">{% if
+cart.total_price >= 500 %}FREE{% else %} 50{% endif %}</span></div>
+<hr>
+<div class="d-flex justify-content-between fw-bold fs-5 text-primary">
+<span>Total</span>
+<span> {% if cart.total_price >= 500 %}{{ cart.total_price }}{% else %}{{ cart.total_price|add:50 }}{%
+endif %}</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

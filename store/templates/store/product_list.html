@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Products - Flipzon{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+
+    <!-- Sidebar Filters -->
+    <div class="col-md-3 mb-4">
+      <div class="card p-4">
+        <h5 class="fw-bold mb-3">
+          <i class="fas fa-filter me-2"></i>Filters
+        </h5>
+
+        <form method="get">
+          {% if request.GET.q %}
+            <input type="hidden" name="q" value="{{ request.GET.q }}">
+          {% endif %}
+
+          <!-- Categories -->
+          <h6 class="fw-semibold mt-3">Categories</h6>
+          <div class="list-group list-group-flush mb-3">
+
+            <a href="{% url 'store:product_list' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}"
+               class="list-group-item list-group-item-action {% if not selected_category %}active{% endif %} py-2 rounded mb-1">
+              All
+            </a>
+
+            {% for cat in categories %}
+              <a href="?category={{ cat.slug }}
+                {% if request.GET.q %}&q={{ request.GET.q }}{% endif %}
+                {% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}
+                {% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}"
+                 class="list-group-item list-group-item-action {% if selected_category and selected_category.slug == cat.slug %}active{% endif %} py-2 rounded mb-1">
+                {{ cat.name }}
+                <span class="badge bg-secondary float-end">{{ cat.products.count }}</span>
+              </a>
+            {% endfor %}
+          </div>
+
+          <!-- Price Range -->
+          <h6 class="fw-semibold">Price Range</h6>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <input type="number" class="form-control form-control-sm"
+                     name="min_price" placeholder="Min"
+                     value="{{ request.GET.min_price }}">
+            </div>
+            <div class="col-6">
+              <input type="number" class="form-control form-control-sm"
+                     name="max_price" placeholder="Max"
+                     value="{{ request.GET.max_price }}">
+            </div>
+          </div>
+
+          {% if selected_category %}
+            <input type="hidden" name="category" value="{{ selected_category.slug }}">
+          {% endif %}
+
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            Apply Filters
+          </button>
+
+          <a href="{% url 'store:product_list' %}"
+             class="btn btn-outline-secondary btn-sm w-100 mt-2">
+            Clear All
+          </a>
+        </form>
+      </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="col-md-9">
+
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 class="fw-bold mb-0">
+            {% if selected_category %}
+              {{ selected_category.name }}
+            {% elif search_query %}
+              Results for "{{ search_query }}"
+            {% else %}
+              All Products
+            {% endif %}
+          </h4>
+          <small class="text-muted">{{ products|length }} products found</small>
+        </div>
+
+        <!-- Sorting -->
+        <form method="get" class="d-flex align-items-center gap-2">
+
+          {% if selected_category %}
+            <input type="hidden" name="category" value="{{ selected_category.slug }}">
+          {% endif %}
+          {% if search_query %}
+            <input type="hidden" name="q" value="{{ search_query }}">
+          {% endif %}
+          {% if request.GET.min_price %}
+            <input type="hidden" name="min_price" value="{{ request.GET.min_price }}">
+          {% endif %}
+          {% if request.GET.max_price %}
+            <input type="hidden" name="max_price" value="{{ request.GET.max_price }}">
+          {% endif %}
+
+          <label class="mb-0 small">Sort by:</label>
+          <select name="sort" class="form-select form-select-sm"
+                  style="width:170px;" onchange="this.form.submit()">
+
+            <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>
+              Newest First
+            </option>
+            <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>
+              Price: Low to High
+            </option>
+            <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>
+              Price: High to Low
+            </option>
+            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>
+              Name A-Z
+            </option>
+          </select>
+        </form>
+      </div>
+
+      <!-- Product Grid -->
+      {% if products %}
+        <div class="row g-4">
+          {% for p in products %}
+            <div class="col-6 col-md-4">
+              <div class="card h-100">
+
+                <a href="{% url 'store:product_detail' p.slug %}">
+                  {% if p.image %}
+                    <img src="{{ p.image.url }}" class="product-img w-100" alt="{{ p.name }}">
+                  {% else %}
+                    <div class="product-img w-100 bg-light d-flex align-items-center justify-content-center">
+                      <i class="fas fa-image fa-3x text-muted"></i>
+                    </div>
+                  {% endif %}
+                </a>
+
+                <div class="card-body d-flex flex-column">
+                  <small class="text-muted">{{ p.category.name }}</small>
+
+                  <h6 class="fw-bold mt-1">
+                    <a href="{% url 'store:product_detail' p.slug %}"
+                       class="text-dark text-decoration-none">
+                      {{ p.name }}
+                    </a>
+                  </h6>
+
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="price">₹{{ p.final_price }}</span>
+                    {% if p.discount_price %}
+                      <span class="old-price">₹{{ p.price }}</span>
+                      <span class="discount-badge">{{ p.discount_percent }}% off</span>
+                    {% endif %}
+                  </div>
+
+                  <div class="mt-auto">
+                    {% if p.in_stock %}
+                      <form action="{% url 'cart:add' p.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="quantity" value="1">
+                        <button class="btn btn-primary btn-sm w-100">
+                          <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                        </button>
+                      </form>
+                    {% else %}
+                      <button class="btn btn-secondary btn-sm w-100" disabled>
+                        Out of Stock
+                      </button>
+                    {% endif %}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+      {% else %}
+        <!-- No Products -->
+        <div class="text-center py-5">
+          <i class="fas fa-search fa-4x text-muted mb-3"></i>
+          <h5>No products found</h5>
+          <a href="{% url 'store:product_list' %}" class="btn btn-primary mt-2">
+            Clear Filters
+          </a>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

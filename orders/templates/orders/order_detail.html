@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ order.id }} - Flipzon{% endblock %}
+{% block content %}
+<div class="container py-5">
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h2 class="fw-bold mb-0">Order #{{ order.id }}</h2>
+<a href="{% url 'orders:order_list' %}" class="btn btn-outline-secondary">
+<i class="fas fa-arrow-left me-2"></i>Back to Orders
+</a>
+</div>
+<div class="row g-4">
+<div class="col-md-8">
+<!-- Status Progress -->
+<div class="card p-4 mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h5 class="fw-bold mb-0">Order Status</h5>
+{% if order.status == 'pending' %}<span class="badge bg-warning text-dark fs-6">Pending</span>
+{% elif order.status == 'processing' %}<span class="badge bg-info fs-6">Processing</span>
+{% elif order.status == 'shipped' %}<span class="badge bg-primary fs-6">Shipped</span>
+{% elif order.status == 'delivered' %}<span class="badge bg-success fs-6">Delivered</span>
+{% elif order.status == 'cancelled' %}<span class="badge bg-danger fs-6">Cancelled</span>{% endif %}
+</div>
+<div class="progress mb-2" style="height:8px;">
+{% if order.status == 'pending' %}<div class="progress-bar bg-warning" style="width:25%"></div>
+{% elif order.status == 'processing' %}<div class="progress-bar bg-info" style="width:50%"></div>
+{% elif order.status == 'shipped' %}<div class="progress-bar bg-primary" style="width:75%"></div>
+{% elif order.status == 'delivered' %}<div class="progress-bar bg-success" style="width:100%"></div>
+{% elif order.status == 'cancelled' %}<div class="progress-bar bg-danger" style="width:100%"></div>{% endif
+%}
+</div>
+<div class="d-flex justify-content-between text-muted" style="font-size:.8rem;">
+<span>Pending</span><span>Processing</span><span>Shipped</span><span>Delivered</span>
+</div>
+</div>
+<!-- Items -->
+<div class="card p-4">
+<h5 class="fw-bold mb-4">Items Ordered</h5>
+{% for item in order.items.all %}
+    <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+{% if item.product and item.product.image %}
+<img src="{{ item.product.image.url }}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"
+alt="">
+{% else %}
+<div class="bg-light rounded d-flex align-items-center justify-content-center"
+style="width:60px;height:60px;">
+<i class="fas fa-box text-muted"></i>
+</div>
+{% endif %}
+<div class="ms-3 flex-grow-1">
+<h6 class="fw-bold mb-0">{{ item.product_name }}</h6>
+<small class="text-muted"> {{ item.price }} × {{ item.quantity }}</small>
+</div>
+<span class="fw-bold text-primary"> {{ item.total_price }}</span>
+</div>
+{% endfor %}
+<div class="d-flex justify-content-between fw-bold fs-5 mt-3 text-primary">
+<span>Total Paid</span>
+<span> {{ order.total_amount }}</span>
+</div>
+</div>
+</div>
+<div class="col-md-4">
+<!-- Delivery Address -->
+<div class="card p-4 mb-4">
+<h5 class="fw-bold mb-3"><i class="fas fa-map-marker-alt me-2 text-primary"></i>Delivery Address</h5>
+<p class="fw-semibold mb-1">{{ order.full_name }}</p>
+<p class="text-muted mb-1">{{ order.address }}</p>
+<p class="text-muted mb-1">{{ order.city }}, {{ order.state }} - {{ order.pincode }}</p>
+<p class="text-muted mb-1"><i class="fas fa-phone me-1"></i>{{ order.phone }}</p>
+<p class="text-muted mb-0"><i class="fas fa-envelope me-1"></i>{{ order.email }}</p>
+</div>
+<!-- Payment Info -->
+<div class="card p-4">
+<h5 class="fw-bold mb-3"><i class="fas fa-credit-card me-2 text-primary"></i>Payment Info</h5>
+<p class="mb-1"><strong>Method:</strong> {{ order.get_payment_method_display }}</p>
+<p class="mb-1"><strong>Status:</strong>
+{% if order.payment_status %}<span class="text-success fw-bold">Paid</span>
+{% else %}<span class="text-warning fw-bold">Pending</span>{% endif %}
+</p>
+<p class="mb-0"><strong>Date:</strong> {{ order.created_at|date:"M d, Y H:i" }}</p>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}
